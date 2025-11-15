@@ -11,6 +11,7 @@ import SetupLayout from '../../components/layout/SetupLayout'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { saveSocialInfo } from '../../features/setup/setupSlice'
 import { toast } from 'react-toastify'
+import { updateCompanyFromState } from '../../features/setup/setupThunks'
 
 interface SocialMediaForm {
   linkedin: string
@@ -23,15 +24,28 @@ interface SocialMediaForm {
 const SocialMediaPage = () => {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  const socialInfo = useAppSelector((state) => state.setup.socialInfo)
+  const { socialInfo, companyId } = useAppSelector((state) => state.setup)
 
   const { register, handleSubmit } = useForm<SocialMediaForm>({
     defaultValues: socialInfo,
   })
 
-  const onSubmit = (values: SocialMediaForm) => {
+  const onSubmit = async (values: SocialMediaForm) => {
     dispatch(saveSocialInfo(values))
-    toast.success('Social profiles updated')
+
+    if (companyId) {
+      try {
+        await dispatch(updateCompanyFromState()).unwrap()
+        toast.success('Social profiles updated')
+      } catch (error) {
+        const message = typeof error === 'string' ? error : 'Unable to update social profiles'
+        toast.error(message)
+        return
+      }
+    } else {
+      toast.success('Social profiles updated')
+    }
+
     navigate('/setup/contact')
   }
 

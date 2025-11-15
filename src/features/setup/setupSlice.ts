@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
+import type { CompanyProfile } from '../../services/companyService'
 import type {
   CompanyInfo,
   ContactInfo,
@@ -8,10 +9,17 @@ import type {
   SetupStepKey,
   SocialMediaInfo,
 } from '../../types/setup'
+import {
+  fetchCompanyProfile,
+  submitSetup,
+  updateCompanyFromState,
+  uploadBannerThunk,
+  uploadLogoThunk,
+} from './setupThunks'
 
 const stepOrder: SetupStepKey[] = ['company', 'founding', 'social', 'contact']
 
-const initialState: SetupState = {
+const createInitialState = (): SetupState => ({
   stepOrder,
   currentStep: 'company',
   completedSteps: [],
@@ -43,7 +51,12 @@ const initialState: SetupState = {
     email: '',
   },
   isComplete: false,
-}
+  companyId: null,
+  status: 'idle',
+  error: null,
+})
+
+const initialState: SetupState = createInitialState()
 
 const getNextStep = (current: SetupStepKey) => {
   const idx = stepOrder.indexOf(current)
@@ -57,8 +70,39 @@ const markStepComplete = (state: SetupState, step: SetupStepKey) => {
   const next = getNextStep(step)
   if (next) {
     state.currentStep = next
-  } else {
-    state.isComplete = true
+  }
+}
+
+const applyProfileToState = (state: SetupState, profile: CompanyProfile) => {
+  state.companyId = profile.id
+  state.companyInfo = {
+    ...state.companyInfo,
+    companyName: profile.company_name ?? state.companyInfo.companyName,
+    about: profile.description ?? state.companyInfo.about,
+    logoUrl: profile.logo_url ?? null,
+    bannerUrl: profile.banner_url ?? null,
+  }
+
+  state.foundingInfo = {
+    ...state.foundingInfo,
+    industryType: profile.industry ?? state.foundingInfo.industryType,
+    website: profile.website ?? state.foundingInfo.website,
+    yearOfEstablishment: profile.founded_date ?? state.foundingInfo.yearOfEstablishment,
+  }
+
+  if (profile.social_links) {
+    state.socialInfo = {
+      ...state.socialInfo,
+      ...profile.social_links,
+    }
+  }
+
+  state.contactInfo = {
+    ...state.contactInfo,
+    mapLocation: profile.address ?? state.contactInfo.mapLocation,
+    phone: profile.phone ?? state.contactInfo.phone,
+    phoneCountryCode: profile.phone_country_code ?? state.contactInfo.phoneCountryCode,
+    email: profile.contact_email ?? state.contactInfo.email,
   }
 }
 
@@ -86,8 +130,59 @@ const setupSlice = createSlice({
       state.currentStep = action.payload
     },
     resetSetup() {
-      return initialState
+      return createInitialState()
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchCompanyProfile.pending, (state) => {
+        state.status = 'loading'
+        state.error = null
+      })
+      .addCase(fetchCompanyProfile.fulfilled, (state, action) => {
+        state.status = 'succeeded'
+        applyProfileToState(state, action.payload)
+      })
+      .addCase(fetchCompanyProfile.rejected, (state, action) => {
+        if (action.payload === 'NOT_FOUND') {
+          state.status = 'idle'
+          state.error = null
+          return
+        }
+        state.status = 'failed'
+        state.error = action.payload ?? 'Unable to fetch company profile'
+      })
+      .addCase(submitSetup.pending, (state) => {
+        state.status = 'loading'
+        state.error = null
+      })
+      .addCase(submitSetup.fulfilled, (state, action) => {
+        state.status = 'succeeded'
+        applyProfileToState(state, action.payload)
+        state.isComplete = true
+      })
+      .addCase(submitSetup.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = action.payload ?? 'Unable to submit setup'
+      })
+      .addCase(updateCompanyFromState.pending, (state) => {
+        state.status = 'loading'
+        state.error = null
+      })
+      .addCase(updateCompanyFromState.fulfilled, (state, action) => {
+        state.status = 'succeeded'
+        applyProfileToState(state, action.payload)
+      })
+      .addCase(updateCompanyFromState.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = action.payload ?? 'Unable to update company profile'
+      })
+      .addCase(uploadLogoThunk.fulfilled, (state, action) => {
+        state.companyInfo.logoUrl = action.payload
+      })
+      .addCase(uploadBannerThunk.fulfilled, (state, action) => {
+        state.companyInfo.bannerUrl = action.payload
+      })
   },
 })
 

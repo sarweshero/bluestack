@@ -13,7 +13,7 @@ import SetupStepGuard from './guards/SetupStepGuard'
 import { useAppSelector } from '../store/hooks'
 
 const AppRouter = () => {
-  const { isAuthenticated, otpVerified } = useAppSelector((state) => state.auth)
+  const { isAuthenticated, otpVerified, pendingUserId } = useAppSelector((state) => state.auth)
   const setupState = useAppSelector((state) => state.setup)
 
   return (
@@ -34,7 +34,7 @@ const AppRouter = () => {
         path="/verify-otp"
         element={
           <ProtectedRoute
-            isAllowed={isAuthenticated && !otpVerified && !setupState.isComplete}
+            isAllowed={((isAuthenticated && !otpVerified) || !!pendingUserId) && !setupState.isComplete}
             redirectPath={isAuthenticated ? '/setup/company' : '/login'}
           >
             <OtpVerificationPage />

@@ -1,8 +1,8 @@
 import { Box, Button, Link, Stack, TextField, Typography } from '@mui/material'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
-import { useAppDispatch } from '../../store/hooks'
-import { login } from '../../features/auth/authSlice'
+import { useAppDispatch, useAppSelector } from '../../store/hooks'
+import { loginUserThunk } from '../../features/auth/authSlice'
 import AuthShell from '../../components/layout/AuthShell'
 import AuthIllustrationPane from '../../components/layout/AuthIllustrationPane'
 import { toast } from 'react-toastify'
@@ -17,12 +17,19 @@ const LoginPage = () => {
     defaultValues: { email: '', password: '' },
   })
   const dispatch = useAppDispatch()
+  const authStatus = useAppSelector((state) => state.auth.status)
+  const isSubmitting = authStatus === 'loading'
   const navigate = useNavigate()
 
-  const onSubmit = (values: LoginFormValues) => {
-    dispatch(login({ email: values.email }))
-    toast.success('Welcome back!')
-    navigate('/dashboard/settings')
+  const onSubmit = async (values: LoginFormValues) => {
+    try {
+      await dispatch(loginUserThunk(values)).unwrap()
+      toast.success('Welcome back!')
+      navigate('/dashboard/settings')
+    } catch (error) {
+      const message = typeof error === 'string' ? error : 'Unable to login'
+      toast.error(message)
+    }
   }
 
   return (
@@ -81,6 +88,7 @@ const LoginPage = () => {
         <Button
           type="submit"
           size="large"
+          disabled={isSubmitting}
           sx={{
             mt: 1,
             height: 64,
@@ -93,7 +101,7 @@ const LoginPage = () => {
             },
           }}
         >
-          Login
+          {isSubmitting ? 'Logging in…' : 'Login'}
         </Button>
         <Typography textAlign="center" color="text.secondary">
           Don&apos;t have an account ?{' '}

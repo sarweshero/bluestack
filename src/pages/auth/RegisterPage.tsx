@@ -15,8 +15,8 @@ import 'react-phone-input-2/lib/style.css'
 import { useNavigate } from 'react-router-dom'
 import AuthShell from '../../components/layout/AuthShell'
 import AuthIllustrationPane from '../../components/layout/AuthIllustrationPane'
-import { useAppDispatch } from '../../store/hooks'
-import { register as registerAction } from '../../features/auth/authSlice'
+import { useAppDispatch, useAppSelector } from '../../store/hooks'
+import { registerUserThunk } from '../../features/auth/authSlice'
 import { toast } from 'react-toastify'
 
 interface RegisterFormValues {
@@ -95,17 +95,40 @@ const RegisterPage = () => {
   const [gender, setGender] = useState('male')
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
+  const authStatus = useAppSelector((state) => state.auth.status)
+  const isSubmitting = authStatus === 'loading'
 
-  const onSubmit = (values: RegisterFormValues) => {
-    dispatch(
-      registerAction({
-        email: values.email,
-        password: values.password,
-        mobile: values.mobile,
-      }),
-    )
-    toast.success('Registration successful! Verify your OTP to continue.')
-    navigate('/verify-otp')
+  const onSubmit = async (values: RegisterFormValues) => {
+    if (values.password !== values.confirmPassword) {
+      toast.error('Passwords do not match')
+      return
+    }
+
+    if (!values.mobile) {
+      toast.error('Mobile number is required')
+      return
+    }
+
+    const normalizedMobile = values.mobile.startsWith('+')
+      ? values.mobile
+      : `+${values.mobile}`
+
+    try {
+      await dispatch(
+        registerUserThunk({
+          fullName: values.fullName,
+          email: values.email,
+          password: values.password,
+          gender: values.gender as 'male' | 'female' | 'other',
+          mobile: normalizedMobile,
+        }),
+      ).unwrap()
+      toast.success('Registration successful! Verify your OTP to continue.')
+      navigate('/verify-otp')
+    } catch (error) {
+      const message = typeof error === 'string' ? error : 'Unable to register'
+      toast.error(message)
+    }
   }
 
   return (
@@ -227,6 +250,7 @@ const RegisterPage = () => {
         <Button
           type="submit"
           size="large"
+          disabled={isSubmitting}
           sx={{
             mt: 1,
             height: 56,
@@ -239,7 +263,7 @@ const RegisterPage = () => {
             },
           }}
         >
-          Register
+          {isSubmitting ? 'Registering…' : 'Register'}
         </Button>
         <Typography textAlign="center" color="text.secondary">
           Already have an account?{' '}

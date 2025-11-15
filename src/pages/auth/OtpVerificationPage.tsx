@@ -11,7 +11,7 @@ import {
 import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
-import { setOtpVerified } from '../../features/auth/authSlice'
+import { verifyOtpThunk } from '../../features/auth/authSlice'
 import { toast } from 'react-toastify'
 
 interface OtpFormValues {
@@ -24,12 +24,18 @@ const OtpVerificationPage = () => {
   const { control, handleSubmit } = useForm<OtpFormValues>({ defaultValues: { otp: '' } })
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  const user = useAppSelector((state) => state.auth.user)
+  const { user, status } = useAppSelector((state) => state.auth)
+  const isSubmitting = status === 'loading'
 
-  const onSubmit = () => {
-    dispatch(setOtpVerified(true))
-    toast.success('OTP verified successfully')
-    navigate('/setup/company')
+  const onSubmit = async ({ otp }: OtpFormValues) => {
+    try {
+      await dispatch(verifyOtpThunk({ otp })).unwrap()
+      toast.success('OTP verified successfully')
+      navigate('/setup/company')
+    } catch (error) {
+      const message = typeof error === 'string' ? error : 'Unable to verify OTP'
+      toast.error(message)
+    }
   }
 
   return (
@@ -162,6 +168,7 @@ const OtpVerificationPage = () => {
             </Button>
             <Button
               variant="contained"
+              disabled={isSubmitting}
               onClick={handleSubmit(onSubmit)}
               sx={{
                 width: 220,
@@ -174,7 +181,7 @@ const OtpVerificationPage = () => {
                 },
               }}
             >
-              Verify Mobile
+              {isSubmitting ? 'Verifying…' : 'Verify Mobile'}
             </Button>
           </Stack>
         </Stack>

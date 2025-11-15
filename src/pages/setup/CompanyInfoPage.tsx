@@ -14,6 +14,8 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { saveCompanyInfo } from '../../features/setup/setupSlice'
 import { updateUser } from '../../features/auth/authSlice'
 import { toast } from 'react-toastify'
+import { uploadLogoThunk, uploadBannerThunk, updateCompanyFromState } from '../../features/setup/setupThunks'
+import { useState } from 'react'
 
 interface CompanyInfoForm {
   logoUrl: string | null
@@ -34,16 +36,31 @@ const toolbarIcons = [
 const CompanyInfoPage = () => {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  const companyInfo = useAppSelector((state) => state.setup.companyInfo)
+  const { companyInfo, companyId } = useAppSelector((state) => state.setup)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [bannerUploading, setBannerUploading] = useState(false)
 
   const { control, register, handleSubmit } = useForm<CompanyInfoForm>({
     defaultValues: companyInfo,
   })
 
-  const onSubmit = (values: CompanyInfoForm) => {
+  const onSubmit = async (values: CompanyInfoForm) => {
     dispatch(saveCompanyInfo(values))
     dispatch(updateUser({ companyName: values.companyName }))
-    toast.success('Company info saved')
+
+    if (companyId) {
+      try {
+        await dispatch(updateCompanyFromState()).unwrap()
+        toast.success('Company info saved')
+      } catch (error) {
+        const message = typeof error === 'string' ? error : 'Unable to update company info'
+        toast.error(message)
+        return
+      }
+    } else {
+      toast.success('Company info saved')
+    }
+
     navigate('/setup/founding')
   }
 
@@ -65,7 +82,28 @@ const CompanyInfoPage = () => {
                     title="Upload Logo"
                     subtitle="Browse photo or drop here"
                     value={field.value}
-                    onChange={(url) => field.onChange(url)}
+                    disabled={logoUploading}
+                    onChange={async (url, file) => {
+                      if (!file) {
+                        field.onChange(null)
+                        return
+                      }
+
+                      const previousValue = field.value
+                      field.onChange(url)
+                      setLogoUploading(true)
+                      try {
+                        const uploadedUrl = await dispatch(uploadLogoThunk(file)).unwrap()
+                        field.onChange(uploadedUrl)
+                        toast.success('Logo uploaded')
+                      } catch (error) {
+                        field.onChange(previousValue)
+                        const message = typeof error === 'string' ? error : 'Unable to upload logo'
+                        toast.error(message)
+                      } finally {
+                        setLogoUploading(false)
+                      }
+                    }}
                     helperText="A photo larger than 400 pixels works best. Max photo size 5 MB."
                   />
                 )}
@@ -81,7 +119,28 @@ const CompanyInfoPage = () => {
                     title="Banner Image"
                     subtitle="Browse photo or drop here"
                     value={field.value}
-                    onChange={(url) => field.onChange(url)}
+                    disabled={bannerUploading}
+                    onChange={async (url, file) => {
+                      if (!file) {
+                        field.onChange(null)
+                        return
+                      }
+
+                      const previousValue = field.value
+                      field.onChange(url)
+                      setBannerUploading(true)
+                      try {
+                        const uploadedUrl = await dispatch(uploadBannerThunk(file)).unwrap()
+                        field.onChange(uploadedUrl)
+                        toast.success('Banner uploaded')
+                      } catch (error) {
+                        field.onChange(previousValue)
+                        const message = typeof error === 'string' ? error : 'Unable to upload banner'
+                        toast.error(message)
+                      } finally {
+                        setBannerUploading(false)
+                      }
+                    }}
                     helperText="Banner images optimal dimension 1520×400. Supported format JPEG, PNG. Max photo size 5 MB."
                   />
                 )}
@@ -163,6 +222,7 @@ const CompanyInfoPage = () => {
           <Button
             variant="contained"
             onClick={handleSubmit(onSubmit)}
+            disabled={logoUploading || bannerUploading}
             sx={{
               width: 180,
               height: 56,
@@ -173,7 +233,7 @@ const CompanyInfoPage = () => {
               },
             }}
           >
-            Save &amp; Next
+            {logoUploading || bannerUploading ? 'Uploading…' : 'Save & Next'}
           </Button>
         </Stack>
       </Stack>

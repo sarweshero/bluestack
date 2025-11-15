@@ -2,6 +2,8 @@
 
 Pixel-perfect implementation of the Jobpilot employer onboarding, verification, and dashboard experience using **React 19 + Vite** with **Redux Toolkit**, **React Query**, and **MUI**. The UI mirrors the provided Figma screens for login, registration, OTP verification, four-step company setup, completion state, and the dashboard settings view.
 
+> **What's new:** The front-end now calls the Company Registration Backend (register/login, OTP verification, company profile CRUD, logo/banner uploads). Configure `VITE_API_BASE_URL` to point at your API (e.g. `http://localhost:5000`).
+
 ## Getting Started
 
 ```bash
@@ -21,7 +23,8 @@ npm run dev
 - **MUI 6** + custom theme (`src/styles/theme.ts`) for pixel-perfect styling
 - **react-hook-form** powering every form + stepper
 - **react-phone-input-2**, **react-datepicker**, **react-toastify** integrated as in designs
-- **Firebase Auth** and **Axios/Cloudinary** placeholders prepared for API wiring (`src/config/firebase.ts`, `src/services/apiClient.ts`)
+- **Axios** service layer in `src/services` wired to auth + company endpoints, auto-attaching bearer tokens
+- **Firebase Auth** placeholders remain for real OTP flow (`src/config/firebase.ts`)
 
 ## Project Structure
 
@@ -50,7 +53,7 @@ Key flows:
 Copy `.env.example` (add one if missing) with the following keys before integrating real services:
 
 ```
-VITE_API_BASE_URL=
+VITE_API_BASE_URL=http://localhost:5000
 VITE_FIREBASE_API_KEY=
 VITE_FIREBASE_AUTH_DOMAIN=
 VITE_FIREBASE_PROJECT_ID=
@@ -68,7 +71,7 @@ VITE_FIREBASE_APP_ID=
 
 ## Next Steps
 
-1. Hook the prepared Firebase auth helpers for real login/register/OTP.
-2. Wire API endpoints via React Query + Axios (`apiClient`).
-3. Replace placeholder gradients/images with real assets.
-4. Expand Redux slices or React Query cache as backend contracts solidify.
+1. Connect Firebase Phone Auth to obtain the `firebaseUid` required by `/api/auth/verify-mobile` (currently the entered OTP value is sent; swap with the verified UID when Firebase is ready).
+2. Extend validation + error surfaces as real backend rules become available (e.g. stronger password policy, address breakdown).
+3. Replace placeholder gradients/images with production assets.
+4. Expand Redux/React Query coverage for additional backend modules (e.g. dashboard widgets, team management).

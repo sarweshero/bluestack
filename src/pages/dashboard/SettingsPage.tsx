@@ -39,6 +39,11 @@ import type {
   SocialMediaInfo,
 } from '../../types/setup'
 import { toast } from 'react-toastify'
+import {
+  updateCompanyFromState,
+  uploadBannerThunk,
+  uploadLogoThunk,
+} from '../../features/setup/setupThunks'
 
 const tabConfig = [
   { label: 'Company Info', value: 'company' },
@@ -52,9 +57,20 @@ type TabKey = (typeof tabConfig)[number]['value']
 const SettingsPage = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('company')
   const dispatch = useAppDispatch()
-  const { companyInfo, foundingInfo, socialInfo, contactInfo } = useAppSelector(
+  const { companyInfo, foundingInfo, socialInfo, contactInfo, status, companyId } = useAppSelector(
     (state) => state.setup,
   )
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [bannerUploading, setBannerUploading] = useState(false)
+  const isSaving = status === 'loading'
+  const canPersist = companyId !== null
+  const ensurePersistable = () => {
+    if (!canPersist) {
+      toast.error('Company profile not initialized yet. Complete onboarding first.')
+      return false
+    }
+    return true
+  }
 
   const organizationOptions = useMemo(
     () => ['Private Limited', 'Public Limited', 'Partnership', 'Startup'],
@@ -91,6 +107,27 @@ const SettingsPage = () => {
     registerContact('phoneCountryCode')
   }, [registerContact])
 
+  useEffect(() => {
+    companyForm.reset(companyInfo)
+  }, [companyForm, companyInfo])
+
+  useEffect(() => {
+    foundingForm.reset({
+      ...foundingInfo,
+      yearOfEstablishment: foundingInfo.yearOfEstablishment
+        ? new Date(foundingInfo.yearOfEstablishment)
+        : null,
+    })
+  }, [foundingForm, foundingInfo])
+
+  useEffect(() => {
+    socialForm.reset(socialInfo)
+  }, [socialForm, socialInfo])
+
+  useEffect(() => {
+    contactForm.reset(contactInfo)
+  }, [contactForm, contactInfo])
+
   const renderCompanyTab = () => (
     <Stack spacing={4}>
       <Grid container spacing={3}>
@@ -104,7 +141,36 @@ const SettingsPage = () => {
                 title="Upload Logo"
                 subtitle="Browse photo or drop here"
                 value={field.value}
-                onChange={(url) => field.onChange(url)}
+                disabled={logoUploading || isSaving}
+                onChange={async (url, file) => {
+                  if (!file) {
+                    field.onChange(null)
+                    return
+                  }
+
+                  const previousValue = field.value
+                  field.onChange(url)
+                  setLogoUploading(true)
+                  try {
+                    const uploadedUrl = await dispatch(uploadLogoThunk(file)).unwrap()
+                    field.onChange(uploadedUrl)
+                    dispatch(saveCompanyInfo({
+                      ...companyForm.getValues(),
+                      logoUrl: uploadedUrl,
+                    }))
+                    if (!ensurePersistable()) {
+                      return
+                    }
+                    await dispatch(updateCompanyFromState()).unwrap()
+                    toast.success('Logo updated')
+                  } catch (error) {
+                    field.onChange(previousValue)
+                    const message = typeof error === 'string' ? error : 'Unable to upload logo'
+                    toast.error(message)
+                  } finally {
+                    setLogoUploading(false)
+                  }
+                }}
               />
             )}
           />
@@ -119,7 +185,36 @@ const SettingsPage = () => {
                 title="Banner Image"
                 subtitle="Browse photo or drop here"
                 value={field.value}
-                onChange={(url) => field.onChange(url)}
+                disabled={bannerUploading || isSaving}
+                onChange={async (url, file) => {
+                  if (!file) {
+                    field.onChange(null)
+                    return
+                  }
+
+                  const previousValue = field.value
+                  field.onChange(url)
+                  setBannerUploading(true)
+                  try {
+                    const uploadedUrl = await dispatch(uploadBannerThunk(file)).unwrap()
+                    field.onChange(uploadedUrl)
+                    dispatch(saveCompanyInfo({
+                      ...companyForm.getValues(),
+                      bannerUrl: uploadedUrl,
+                    }))
+                    if (!ensurePersistable()) {
+                      return
+                    }
+                    await dispatch(updateCompanyFromState()).unwrap()
+                    toast.success('Banner updated')
+                  } catch (error) {
+                    field.onChange(previousValue)
+                    const message = typeof error === 'string' ? error : 'Unable to upload banner'
+                    toast.error(message)
+                  } finally {
+                    setBannerUploading(false)
+                  }
+                }}
               />
             )}
           />
@@ -142,12 +237,22 @@ const SettingsPage = () => {
       <Button
         variant="contained"
         sx={{ alignSelf: 'flex-start', borderRadius: '999px', px: 4 }}
-        onClick={companyForm.handleSubmit((values) => {
+        disabled={isSaving || logoUploading || bannerUploading}
+        onClick={companyForm.handleSubmit(async (values) => {
           dispatch(saveCompanyInfo(values))
-          toast.success('Company info updated')
+          if (!ensurePersistable()) {
+            return
+          }
+          try {
+            await dispatch(updateCompanyFromState()).unwrap()
+            toast.success('Company info updated')
+          } catch (error) {
+            const message = typeof error === 'string' ? error : 'Unable to update company info'
+            toast.error(message)
+          }
         })}
       >
-        Save Change
+        {isSaving || logoUploading || bannerUploading ? 'Saving…' : 'Save Change'}
       </Button>
     </Stack>
   )
@@ -245,7 +350,8 @@ const SettingsPage = () => {
       <Button
         variant="contained"
         sx={{ alignSelf: 'flex-start', borderRadius: '999px', px: 4 }}
-        onClick={foundingForm.handleSubmit((values) => {
+        disabled={isSaving}
+        onClick={foundingForm.handleSubmit(async (values) => {
           dispatch(
             saveFoundingInfo({
               ...values,
@@ -254,10 +360,19 @@ const SettingsPage = () => {
                 : null,
             }),
           )
-          toast.success('Founding info updated')
+          if (!ensurePersistable()) {
+            return
+          }
+          try {
+            await dispatch(updateCompanyFromState()).unwrap()
+            toast.success('Founding info updated')
+          } catch (error) {
+            const message = typeof error === 'string' ? error : 'Unable to update founding info'
+            toast.error(message)
+          }
         })}
       >
-        Save Change
+        {isSaving ? 'Saving…' : 'Save Change'}
       </Button>
     </Stack>
   )
@@ -334,12 +449,22 @@ const SettingsPage = () => {
       <Button
         variant="contained"
         sx={{ alignSelf: 'flex-start', borderRadius: '999px', px: 4 }}
-        onClick={socialForm.handleSubmit((values) => {
+        disabled={isSaving}
+        onClick={socialForm.handleSubmit(async (values) => {
           dispatch(saveSocialInfo(values))
-          toast.success('Social profiles updated')
+          if (!ensurePersistable()) {
+            return
+          }
+          try {
+            await dispatch(updateCompanyFromState()).unwrap()
+            toast.success('Social profiles updated')
+          } catch (error) {
+            const message = typeof error === 'string' ? error : 'Unable to update social profiles'
+            toast.error(message)
+          }
         })}
       >
-        Save Change
+        {isSaving ? 'Saving…' : 'Save Change'}
       </Button>
     </Stack>
   )
@@ -431,12 +556,22 @@ const SettingsPage = () => {
               <Button
                 variant="contained"
                 sx={{ alignSelf: 'flex-start', borderRadius: '999px', px: 4 }}
-                onClick={contactForm.handleSubmit((values) => {
+                disabled={isSaving}
+                onClick={contactForm.handleSubmit(async (values) => {
                   dispatch(saveContactInfo(values))
-                  toast.success('Contact details updated')
+                  if (!ensurePersistable()) {
+                    return
+                  }
+                  try {
+                    await dispatch(updateCompanyFromState()).unwrap()
+                    toast.success('Contact details updated')
+                  } catch (error) {
+                    const message = typeof error === 'string' ? error : 'Unable to update contact details'
+                    toast.error(message)
+                  }
                 })}
               >
-                Save Contact
+                {isSaving ? 'Saving…' : 'Save Contact'}
               </Button>
             </Stack>
           </Stack>

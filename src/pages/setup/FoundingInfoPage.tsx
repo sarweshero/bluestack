@@ -19,6 +19,7 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { saveFoundingInfo } from '../../features/setup/setupSlice'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import { updateCompanyFromState } from '../../features/setup/setupThunks'
 
 interface FoundingInfoForm {
   organizationType: string
@@ -32,7 +33,7 @@ interface FoundingInfoForm {
 const FoundingInfoPage = () => {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  const foundingInfo = useAppSelector((state) => state.setup.foundingInfo)
+  const { foundingInfo, companyId } = useAppSelector((state) => state.setup)
 
   const { register, handleSubmit, control } = useForm<FoundingInfoForm>({
     defaultValues: {
@@ -60,7 +61,7 @@ const FoundingInfoPage = () => {
     [],
   )
 
-  const onSubmit = (values: FoundingInfoForm) => {
+  const onSubmit = async (values: FoundingInfoForm) => {
     dispatch(
       saveFoundingInfo({
         ...values,
@@ -69,7 +70,20 @@ const FoundingInfoPage = () => {
           : null,
       }),
     )
-    toast.success('Founding info saved')
+
+    if (companyId) {
+      try {
+        await dispatch(updateCompanyFromState()).unwrap()
+        toast.success('Founding info saved')
+      } catch (error) {
+        const message = typeof error === 'string' ? error : 'Unable to update founding info'
+        toast.error(message)
+        return
+      }
+    } else {
+      toast.success('Founding info saved')
+    }
+
     navigate('/setup/social')
   }
 

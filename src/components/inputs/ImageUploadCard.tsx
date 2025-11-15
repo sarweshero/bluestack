@@ -14,10 +14,14 @@ interface ImageUploadCardProps {
   value: string | null
   onChange: (fileUrl: string | null, file?: File) => void
   helperText?: string
+  disabled?: boolean
 }
 
-const ImageUploadCard = ({ id, title, subtitle, value, onChange, helperText }: ImageUploadCardProps) => {
+const ImageUploadCard = ({ id, title, subtitle, value, onChange, helperText, disabled }: ImageUploadCardProps) => {
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (disabled) {
+      return
+    }
     const file = event.target.files?.[0]
     if (file) {
       const previewUrl = URL.createObjectURL(file)
@@ -82,6 +86,7 @@ const ImageUploadCard = ({ id, title, subtitle, value, onChange, helperText }: I
         <Button
           variant="contained"
           component="label"
+          disabled={disabled}
           sx={{
             borderRadius: '999px',
             px: 3,
@@ -92,10 +97,10 @@ const ImageUploadCard = ({ id, title, subtitle, value, onChange, helperText }: I
           }}
         >
           Browse photo
-          <input hidden type="file" accept="image/*" id={id} onChange={handleFileChange} />
+          <input hidden type="file" accept="image/*" id={id} onChange={handleFileChange} disabled={disabled} />
         </Button>
         {value && (
-          <Button variant="text" onClick={() => onChange(null)} sx={{ color: '#FF5F5F' }}>
+          <Button variant="text" onClick={() => onChange(null)} disabled={disabled} sx={{ color: '#FF5F5F' }}>
             Remove
           </Button>
         )}

@@ -1,7 +1,17 @@
 import axios from 'axios'
 
-export const apiClient = axios.create({
+const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? 'https://api.example.com',
+})
+
+apiClient.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = window.localStorage.getItem('auth_token')
+    if (token && config.headers && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+  }
+  return config
 })
 
 apiClient.interceptors.response.use(
@@ -12,3 +22,5 @@ apiClient.interceptors.response.use(
     return Promise.reject(error)
   },
 )
+
+export { apiClient }

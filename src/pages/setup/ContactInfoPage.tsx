@@ -9,6 +9,7 @@ import SetupLayout from '../../components/layout/SetupLayout'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { saveContactInfo } from '../../features/setup/setupSlice'
 import { toast } from 'react-toastify'
+import { submitSetup } from '../../features/setup/setupThunks'
 
 interface ContactInfoForm {
   mapLocation: string
@@ -20,7 +21,7 @@ interface ContactInfoForm {
 const ContactInfoPage = () => {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  const contactInfo = useAppSelector((state) => state.setup.contactInfo)
+  const { contactInfo, status } = useAppSelector((state) => state.setup)
 
   const { register, handleSubmit, control, setValue } = useForm<ContactInfoForm>({
     defaultValues: contactInfo,
@@ -30,10 +31,17 @@ const ContactInfoPage = () => {
     register('phoneCountryCode')
   }, [register])
 
-  const onSubmit = (values: ContactInfoForm) => {
+  const onSubmit = async (values: ContactInfoForm) => {
     dispatch(saveContactInfo(values))
-    toast.success('Contact info saved')
-    navigate('/setup/complete')
+
+    try {
+      await dispatch(submitSetup()).unwrap()
+      toast.success('Contact info saved')
+      navigate('/setup/complete')
+    } catch (error) {
+      const message = typeof error === 'string' ? error : 'Unable to submit company profile'
+      toast.error(message)
+    }
   }
 
   return (
@@ -105,6 +113,7 @@ const ContactInfoPage = () => {
           <Button
             variant="contained"
             onClick={handleSubmit(onSubmit)}
+            disabled={status === 'loading'}
             sx={{
               width: 180,
               height: 56,
@@ -115,7 +124,7 @@ const ContactInfoPage = () => {
               },
             }}
           >
-            Finish Editing
+            {status === 'loading' ? 'Saving…' : 'Finish Editing'}
           </Button>
         </Stack>
       </Stack>
