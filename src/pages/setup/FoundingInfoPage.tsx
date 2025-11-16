@@ -142,7 +142,7 @@ const FoundingInfoPage = () => {
                 >
                   <DatePicker
                     selected={field.value}
-                    onChange={(date) => field.onChange(date)}
+                    onChange={(date: Date | null) => field.onChange(date)}
                     placeholderText="dd/mm/yyyy"
                     dateFormat="dd/MM/yyyy"
                     customInput={<input />}

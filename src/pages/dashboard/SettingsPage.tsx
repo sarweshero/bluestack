@@ -307,7 +307,7 @@ const SettingsPage = () => {
               >
                 <DatePicker
                   selected={field.value}
-                  onChange={(date) => field.onChange(date)}
+                  onChange={(date: Date | null) => field.onChange(date)}
                   placeholderText="dd/mm/yyyy"
                   dateFormat="dd/MM/yyyy"
                 />
@@ -534,9 +534,9 @@ const SettingsPage = () => {
                       <PhoneInput
                         {...rest}
                         value={value}
-                        onChange={(val, data) => {
+                        onChange={(val: string, data?: { dialCode?: string }) => {
                           onChange(val)
-                          const dialCode = (data as { dialCode?: string } | undefined)?.dialCode
+                          const dialCode = data?.dialCode
                           if (dialCode) {
                             contactForm.setValue('phoneCountryCode', `+${dialCode}`)
                           }
@@ -599,13 +599,15 @@ const SettingsPage = () => {
                 sx={{ alignSelf: 'flex-start', borderRadius: '999px', px: 4 }}
                 disabled={isSaving}
                 onClick={contactForm.handleSubmit(async (values) => {
-                  const missingField = [
+                  const requiredFields: Array<{ key: keyof ContactInfo; label: string }> = [
                     { key: 'mapLocation', label: 'Map location' },
                     { key: 'city', label: 'City' },
                     { key: 'state', label: 'State' },
                     { key: 'country', label: 'Country' },
                     { key: 'postalCode', label: 'Postal code' },
-                  ].find(({ key }) => !values[key].trim())
+                  ]
+
+                  const missingField = requiredFields.find(({ key }) => !values[key]?.trim())
 
                   if (missingField) {
                     toast.error(`${missingField.label} is required`)

@@ -139,7 +139,7 @@ const ContactInfoPage = () => {
                     <PhoneInput
                       {...rest}
                       value={value}
-                      onChange={(val, country) => {
+                      onChange={(val: string, country?: { dialCode?: string }) => {
                         onChange(val)
                         const dialCode = country?.dialCode ? `+${country.dialCode}` : null
                         if (dialCode) {

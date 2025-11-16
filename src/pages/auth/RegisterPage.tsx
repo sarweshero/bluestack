@@ -179,7 +179,7 @@ const RegisterPage = () => {
                   <PhoneInput
                     {...rest}
                     value={value}
-                    onChange={(val) => onChange(val)}
+                    onChange={(val: string) => onChange(val)}
                     country={value ? undefined : 'in'}
                     inputProps={{ name: 'mobile', ref }}
                   />
