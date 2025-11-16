@@ -49,6 +49,10 @@ const createInitialState = (): SetupState => ({
     phone: '',
     phoneCountryCode: '+91',
     email: '',
+    city: '',
+    state: '',
+    country: '',
+    postalCode: '',
   },
   isComplete: false,
   companyId: null,
@@ -73,7 +77,12 @@ const markStepComplete = (state: SetupState, step: SetupStepKey) => {
   }
 }
 
-const applyProfileToState = (state: SetupState, profile: CompanyProfile) => {
+const applyProfileToState = (state: SetupState, profile: CompanyProfile | null) => {
+  if (!profile) {
+    state.companyId = null
+    return
+  }
+
   state.companyId = profile.id
   state.companyInfo = {
     ...state.companyInfo,
@@ -103,6 +112,10 @@ const applyProfileToState = (state: SetupState, profile: CompanyProfile) => {
     phone: profile.phone ?? state.contactInfo.phone,
     phoneCountryCode: profile.phone_country_code ?? state.contactInfo.phoneCountryCode,
     email: profile.contact_email ?? state.contactInfo.email,
+    city: profile.city ?? state.contactInfo.city,
+    state: profile.state ?? state.contactInfo.state,
+    country: profile.country ?? state.contactInfo.country,
+    postalCode: profile.postal_code ?? state.contactInfo.postalCode,
   }
 }
 

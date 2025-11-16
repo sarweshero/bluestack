@@ -12,10 +12,6 @@ import {
 import Grid from '@mui/material/Grid2'
 import { useEffect, useMemo, useState } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import PhoneInput from 'react-phone-input-2'
-import 'react-phone-input-2/lib/style.css'
-import DatePicker from 'react-datepicker'
-import 'react-datepicker/dist/react-datepicker.css'
 import LinkedInIcon from '@mui/icons-material/LinkedIn'
 import FacebookOutlinedIcon from '@mui/icons-material/FacebookOutlined'
 import TwitterIcon from '@mui/icons-material/Twitter'
@@ -44,6 +40,8 @@ import {
   uploadBannerThunk,
   uploadLogoThunk,
 } from '../../features/setup/setupThunks'
+import PhoneInput from '../../components/inputs/PhoneInputField'
+import DatePicker from '../../components/inputs/DatePickerField'
 
 const tabConfig = [
   { label: 'Company Info', value: 'company' },
@@ -515,49 +513,105 @@ const SettingsPage = () => {
               <Controller
                 control={contactForm.control}
                 name="phone"
-                render={({ field }) => (
-                  <Box
-                    sx={{
-                      '.react-tel-input .form-control': {
-                        width: '100%',
-                        height: 60,
-                        borderRadius: '18px',
-                        border: '1px solid #C5D4FF',
-                        paddingLeft: '80px',
-                      },
-                      '.react-tel-input .flag-dropdown': {
-                        border: 'none',
-                        borderRadius: '18px 0 0 18px',
-                      },
-                    }}
-                  >
-                    <PhoneInput
-                      {...field}
-                      country="in"
-                      value={field.value}
-                      onChange={(value, data) => {
-                        field.onChange(value)
-                        contactForm.setValue('phoneCountryCode', `+${(data as { dialCode: string }).dialCode}`)
+                render={({ field }) => {
+                  const { ref, onChange, value, ...rest } = field
+                  return (
+                    <Box
+                      sx={{
+                        '.react-tel-input .form-control': {
+                          width: '100%',
+                          height: 60,
+                          borderRadius: '18px',
+                          border: '1px solid #C5D4FF',
+                          paddingLeft: '80px',
+                        },
+                        '.react-tel-input .flag-dropdown': {
+                          border: 'none',
+                          borderRadius: '18px 0 0 18px',
+                        },
                       }}
-                    />
-                  </Box>
-                )}
+                    >
+                      <PhoneInput
+                        {...rest}
+                        value={value}
+                        onChange={(val, data) => {
+                          onChange(val)
+                          const dialCode = (data as { dialCode?: string } | undefined)?.dialCode
+                          if (dialCode) {
+                            contactForm.setValue('phoneCountryCode', `+${dialCode}`)
+                          }
+                        }}
+                        country={value ? undefined : 'in'}
+                        inputProps={{ name: 'phone', ref }}
+                      />
+                    </Box>
+                  )
+                }}
               />
               <TextField
                 {...contactForm.register('email')}
                 label="Email"
                 placeholder="Email address"
+                required
               />
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    {...contactForm.register('city')}
+                    label="City"
+                    placeholder="City"
+                    required
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    {...contactForm.register('state')}
+                    label="State"
+                    placeholder="State"
+                    required
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    {...contactForm.register('country')}
+                    label="Country"
+                    placeholder="Country"
+                    required
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    {...contactForm.register('postalCode')}
+                    label="Postal Code"
+                    placeholder="Postal Code"
+                    required
+                  />
+                </Grid>
+              </Grid>
               <TextField
                 {...contactForm.register('mapLocation')}
                 label="Map Location"
                 placeholder="Enter your office address or map location"
+                required
               />
               <Button
                 variant="contained"
                 sx={{ alignSelf: 'flex-start', borderRadius: '999px', px: 4 }}
                 disabled={isSaving}
                 onClick={contactForm.handleSubmit(async (values) => {
+                  const missingField = [
+                    { key: 'mapLocation', label: 'Map location' },
+                    { key: 'city', label: 'City' },
+                    { key: 'state', label: 'State' },
+                    { key: 'country', label: 'Country' },
+                    { key: 'postalCode', label: 'Postal code' },
+                  ].find(({ key }) => !values[key].trim())
+
+                  if (missingField) {
+                    toast.error(`${missingField.label} is required`)
+                    return
+                  }
+
                   dispatch(saveContactInfo(values))
                   if (!ensurePersistable()) {
                     return

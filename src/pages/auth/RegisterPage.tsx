@@ -8,16 +8,15 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Controller, useForm } from 'react-hook-form'
-import PhoneInput from 'react-phone-input-2'
-import 'react-phone-input-2/lib/style.css'
 import { useNavigate } from 'react-router-dom'
 import AuthShell from '../../components/layout/AuthShell'
 import AuthIllustrationPane from '../../components/layout/AuthIllustrationPane'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { registerUserThunk } from '../../features/auth/authSlice'
 import { toast } from 'react-toastify'
+import PhoneInput from '../../components/inputs/PhoneInputField'
 
 interface RegisterFormValues {
   fullName: string
@@ -92,7 +91,6 @@ const RegisterPage = () => {
       confirmPassword: '',
     },
   })
-  const [gender, setGender] = useState('male')
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const authStatus = useAppSelector((state) => state.auth.status)
@@ -160,30 +158,34 @@ const RegisterPage = () => {
           <Controller
             control={control}
             name="mobile"
-            render={({ field }) => (
-              <Box
-                sx={{
-                  '.react-tel-input .form-control': {
-                    width: '100%',
-                    height: 64,
-                    borderRadius: '18px',
-                    border: '1px solid #C5D4FF',
-                    paddingLeft: '72px',
-                  },
-                  '.react-tel-input .flag-dropdown': {
-                    border: 'none',
-                    borderRadius: '18px 0 0 18px',
-                  },
-                }}
-              >
-                <PhoneInput
-                  {...field}
-                  country={field.value ? undefined : 'in'}
-                  value={field.value}
-                  onChange={(value) => field.onChange(value)}
-                />
-              </Box>
-            )}
+            render={({ field }) => {
+              const { ref, onChange, value, ...rest } = field
+              return (
+                <Box
+                  sx={{
+                    '.react-tel-input .form-control': {
+                      width: '100%',
+                      height: 64,
+                      borderRadius: '18px',
+                      border: '1px solid #C5D4FF',
+                      paddingLeft: '72px',
+                    },
+                    '.react-tel-input .flag-dropdown': {
+                      border: 'none',
+                      borderRadius: '18px 0 0 18px',
+                    },
+                  }}
+                >
+                  <PhoneInput
+                    {...rest}
+                    value={value}
+                    onChange={(val) => onChange(val)}
+                    country={value ? undefined : 'in'}
+                    inputProps={{ name: 'mobile', ref }}
+                  />
+                </Box>
+              )
+            }}
           />
         </Stack>
         <Stack spacing={1.5}>
@@ -201,11 +203,8 @@ const RegisterPage = () => {
             name="gender"
             render={({ field }) => (
               <GenderToggle
-                value={gender}
-                onChange={(value) => {
-                  setGender(value)
-                  field.onChange(value)
-                }}
+                value={field.value ?? 'male'}
+                onChange={(value) => field.onChange(value)}
               />
             )}
           />

@@ -12,8 +12,7 @@ import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined
 import LanguageOutlinedIcon from '@mui/icons-material/LanguageOutlined'
 import { Controller, useForm } from 'react-hook-form'
 import { useMemo } from 'react'
-import DatePicker from 'react-datepicker'
-import 'react-datepicker/dist/react-datepicker.css'
+import DatePicker from '../../components/inputs/DatePickerField'
 import SetupLayout from '../../components/layout/SetupLayout'
 import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { saveFoundingInfo } from '../../features/setup/setupSlice'
@@ -146,6 +145,7 @@ const FoundingInfoPage = () => {
                     onChange={(date) => field.onChange(date)}
                     placeholderText="dd/mm/yyyy"
                     dateFormat="dd/MM/yyyy"
+                    customInput={<input />}
                   />
                   <CalendarMonthOutlinedIcon
                     sx={{
@@ -154,6 +154,7 @@ const FoundingInfoPage = () => {
                       top: '50%',
                       transform: 'translateY(-50%)',
                       color: '#5C698B',
+                      pointerEvents: 'none',
                     }}
                   />
                 </Box>

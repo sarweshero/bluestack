@@ -1,7 +1,5 @@
 import { Box, Button, Stack, TextField, Typography } from '@mui/material'
 import Grid from '@mui/material/Grid2'
-import PhoneInput from 'react-phone-input-2'
-import 'react-phone-input-2/lib/style.css'
 import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
@@ -10,12 +8,17 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks'
 import { saveContactInfo } from '../../features/setup/setupSlice'
 import { toast } from 'react-toastify'
 import { submitSetup } from '../../features/setup/setupThunks'
+import PhoneInput from '../../components/inputs/PhoneInputField'
 
 interface ContactInfoForm {
   mapLocation: string
   phoneCountryCode: string
   phone: string
   email: string
+  city: string
+  state: string
+  country: string
+  postalCode: string
 }
 
 const ContactInfoPage = () => {
@@ -32,6 +35,21 @@ const ContactInfoPage = () => {
   }, [register])
 
   const onSubmit = async (values: ContactInfoForm) => {
+    const requiredFields = [
+      { key: 'mapLocation', label: 'Map location' },
+      { key: 'city', label: 'City' },
+      { key: 'state', label: 'State' },
+      { key: 'country', label: 'Country' },
+      { key: 'postalCode', label: 'Postal code' },
+    ] as const
+
+    for (const field of requiredFields) {
+      if (!values[field.key].trim()) {
+        toast.error(`${field.label} is required`)
+        return
+      }
+    }
+
     dispatch(saveContactInfo(values))
 
     try {
@@ -56,6 +74,43 @@ const ContactInfoPage = () => {
               {...register('mapLocation')}
               label="Map Location"
               placeholder="Enter your office address or map location"
+              required
+              fullWidth
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              {...register('city')}
+              label="City"
+              placeholder="City"
+              required
+              fullWidth
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              {...register('state')}
+              label="State"
+              placeholder="State"
+              required
+              fullWidth
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              {...register('country')}
+              label="Country"
+              placeholder="Country"
+              required
+              fullWidth
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <TextField
+              {...register('postalCode')}
+              label="Postal Code"
+              placeholder="Postal Code"
+              required
               fullWidth
             />
           </Grid>
@@ -63,33 +118,40 @@ const ContactInfoPage = () => {
             <Controller
               control={control}
               name="phone"
-              render={({ field }) => (
-                <Box
-                  sx={{
-                    '.react-tel-input .form-control': {
-                      width: '100%',
-                      height: 60,
-                      borderRadius: '18px',
-                      border: '1px solid #C5D4FF',
-                      paddingLeft: '80px',
-                    },
-                    '.react-tel-input .flag-dropdown': {
-                      border: 'none',
-                      borderRadius: '18px 0 0 18px',
-                    },
-                  }}
-                >
-                  <PhoneInput
-                    {...field}
-                    country="in"
-                    value={field.value}
-                    onChange={(value, data) => {
-                      field.onChange(value)
-                      setValue('phoneCountryCode', `+${(data as { dialCode: string }).dialCode}`)
+              render={({ field }) => {
+                const { ref, onChange, value, ...rest } = field
+                return (
+                  <Box
+                    sx={{
+                      '.react-tel-input .form-control': {
+                        width: '100%',
+                        height: 60,
+                        borderRadius: '18px',
+                        border: '1px solid #C5D4FF',
+                        paddingLeft: '80px',
+                      },
+                      '.react-tel-input .flag-dropdown': {
+                        border: 'none',
+                        borderRadius: '18px 0 0 18px',
+                      },
                     }}
-                  />
-                </Box>
-              )}
+                  >
+                    <PhoneInput
+                      {...rest}
+                      value={value}
+                      onChange={(val, country) => {
+                        onChange(val)
+                        const dialCode = country?.dialCode ? `+${country.dialCode}` : null
+                        if (dialCode) {
+                          setValue('phoneCountryCode', dialCode)
+                        }
+                      }}
+                      country={value ? undefined : 'in'}
+                      inputProps={{ name: 'phone', ref }}
+                    />
+                  </Box>
+                )
+              }}
             />
           </Grid>
           <Grid size={12}>

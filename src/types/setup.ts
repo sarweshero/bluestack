@@ -29,6 +29,10 @@ export interface ContactInfo {
   phone: string
   phoneCountryCode: string
   email: string
+  city: string
+  state: string
+  country: string
+  postalCode: string
 }
 
 export interface SetupState {

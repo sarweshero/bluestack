@@ -46,13 +46,17 @@ const buildCompanyPayload = (setup: SetupState): RegisterCompanyPayload => ({
   logo_url: emptyToUndefined(setup.companyInfo.logoUrl ?? undefined),
   banner_url: emptyToUndefined(setup.companyInfo.bannerUrl ?? undefined),
   address: emptyToUndefined(setup.contactInfo.mapLocation),
+  city: emptyToUndefined(setup.contactInfo.city),
+  state: emptyToUndefined(setup.contactInfo.state),
+  country: emptyToUndefined(setup.contactInfo.country),
+  postal_code: emptyToUndefined(setup.contactInfo.postalCode),
   phone_country_code: emptyToUndefined(setup.contactInfo.phoneCountryCode),
   phone: emptyToUndefined(setup.contactInfo.phone),
   contact_email: emptyToUndefined(setup.contactInfo.email),
 })
 
 export const fetchCompanyProfile = createAsyncThunk<
-  CompanyProfile,
+  CompanyProfile | null,
   void,
   { rejectValue: string }
 >('setup/fetchCompanyProfile', async (_, thunkAPI) => {
@@ -68,7 +72,7 @@ export const fetchCompanyProfile = createAsyncThunk<
 })
 
 export const submitSetup = createAsyncThunk<
-  CompanyProfile,
+  CompanyProfile | null,
   void,
   { state: RootState; rejectValue: string }
 >('setup/submit', async (_, thunkAPI) => {
@@ -88,7 +92,7 @@ export const submitSetup = createAsyncThunk<
 })
 
 export const updateCompanyFromState = createAsyncThunk<
-  CompanyProfile,
+  CompanyProfile | null,
   void,
   { state: RootState; rejectValue: string }
 >('setup/updateFromState', async (_, thunkAPI) => {

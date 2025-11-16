@@ -68,7 +68,7 @@ export interface UploadResponse {
 
 export const registerCompany = async (
   payload: RegisterCompanyPayload,
-): Promise<CompanyResponse<CompanyProfile>> => {
+): Promise<CompanyResponse<CompanyProfile | null>> => {
   const response = await apiClient.post<CompanyResponse<CompanyProfile>>(
     '/api/company/register',
     payload,
@@ -79,7 +79,7 @@ export const registerCompany = async (
 
 export const updateCompanyProfile = async (
   payload: UpdateCompanyPayload,
-): Promise<CompanyResponse<CompanyProfile>> => {
+): Promise<CompanyResponse<CompanyProfile | null>> => {
   const response = await apiClient.put<CompanyResponse<CompanyProfile>>(
     '/api/company/profile',
     payload,
@@ -88,7 +88,7 @@ export const updateCompanyProfile = async (
   return response.data
 }
 
-export const getCompanyProfile = async (): Promise<CompanyResponse<CompanyProfile>> => {
+export const getCompanyProfile = async (): Promise<CompanyResponse<CompanyProfile | null>> => {
   const response = await apiClient.get<CompanyResponse<CompanyProfile>>('/api/company/profile')
   return response.data
 }
